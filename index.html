@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+    <title>Correlation of data of COPDGene</title>
+</head>
+
+<style>
+    div.title {
+        font-weight: bold;
+    }
+
+</style>
+
+<script type="text/javascript" src="js/d3.js"></script>
+<script type="text/javascript" src="js/crossfilter.js"></script>
+<script type="text/javascript" src="js/dc.js"></script>
+<script type="text/javascript" src="js/jstat.min.js"></script>
+<script type="text/javascript">
+
+    //    var dataCSV = "test.csv"
+    var colorTable = d3.scale.category10();
+    var dataKeys, key1, key2;
+    var dimensions = {};
+    var groups = {};
+    var scatterChart;
+    var minVals = {};
+    var maxVals = {};
+    var keysNotNanCounter = {};
+    var ndx;
+
+
+    function init() {
+//        var csvFile = "data/dataPuller2.csv";
+//        turnCSVIntoMagic(csvFile);
+        configureDropDIV();
+    }
+
+    function handleFileSelect(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+
+        var f = evt.dataTransfer.files[0];
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            aa = e.target.result;
+            turnCSVIntoMagic(aa);
+        }
+        reader.readAsText(f);
+        document.getElementById('drop_zone').style.display     = 'none'
+        document.getElementById('dropDownBoxes').style.display = 'inline'
+    }
+
+    function handleDragOver(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+    }
+
+    function configureDropDIV() {
+        var dropZone = document.getElementById('drop_zone');
+        dropZone.addEventListener('dragover', handleDragOver, false);
+        dropZone.addEventListener('drop', handleFileSelect, false);
+    }
+
+
+    function mypluck(array, property) {
+        var i, rv = [];
+        for (i = 0; i < array.length; ++i) {
+            rv[i] = array[i][property];
+        }
+        return rv;
+    }
+
+    function computeCorrelation(){
+        var drop1 = document.getElementById("dd1");
+        var drop2 = document.getElementById("dd2");
+        var key1 = drop1.options[drop1.selectedIndex].value;
+        var key2 = drop2.options[drop2.selectedIndex].value;
+        var data = dimensions[key1].top(Infinity)
+        var x_corr = mypluck(data, key1)
+        var y_corr = mypluck(data, key2)
+        corr_coeff = jStat.corrcoeff(x_corr,y_corr)
+        r2 = corr_coeff*corr_coeff
+        d3.select("#title-chart-scatter").text("scatter R^2= " + r2.toFixed(4))
+    }
+
+    function populateDropDownBoxesFields() {
+        var drop1 = document.getElementById("dd1");
+        var drop2 = document.getElementById("dd2");
+
+        dataKeys.forEach(function(data){
+            var newOption1 = document.createElement("option");
+            newOption1.value = data;
+            newOption1.innerHTML = data;
+            var newOption2 = document.createElement("option");
+            newOption2.value = data;
+            newOption2.innerHTML = data;
+            drop1.options.add(newOption1);
+            drop2.options.add(newOption2);
+        });
+        drop1.selectedIndex = 0;
+        drop2.selectedIndex = 1;
+    }
+
+    function refreshScatterParams() {
+        var drop1 = document.getElementById("dd1");
+        var key1 = drop1.options[drop1.selectedIndex].value;
+        var drop2 = document.getElementById("dd2");
+        var key2 = drop2.options[drop2.selectedIndex].value;
+
+        console.log("Key 1:", key1);
+        console.log("Key 2:", key2);
+        setScatterPlotDimensions(key1, key2);
+    }
+
+    function setScatterPlotDimensions(key1, key2){
+        var scatterDimension  = ndx.dimension(function(d) {return [d[key1], d[key2]]; })
+        var scatterGroup      = scatterDimension.group().reduceSum(function(d) { return d[key1]; });
+        scatterChart.x(d3.scale.linear().domain([minVals[key1],maxVals[key1]]))
+                .y(d3.scale.linear().domain([minVals[key2],maxVals[key2]]))
+                .yAxisLabel(key2)
+                .xAxisLabel(key1)
+                .dimension(scatterDimension)
+                .group(scatterGroup)
+        dc.renderAll()
+        computeCorrelation();
+    }
+
+    // Functions for the chart
+    function generateRowChart(key, dimension, group) {
+        var chartGen = dc.rowChart("#chart-" + key)
+        var nEls = group.all().length
+        chartGen.width(400).height(nEls * 25 + 35)
+                .dimension(dimension)
+                .group(group)
+                .elasticX(true)
+                .colors(function (d) {
+                    return colorTable(d);
+                })
+        return chartGen;
+    }
+
+    function generateHistogram(key, dimension, group, minVal, maxVal) {
+        var chartGen = dc.barChart("#chart-" + key)
+        chartGen.width(400).height(150)
+                .dimension(dimension)
+                .group(group)
+                .x(d3.scale.linear().domain([minVal, maxVal]))
+                .elasticY(true)
+                .xUnits(function () {
+                    return 20;
+                })
+                .gap(10)
+        return chartGen;
+    }
+
+    function addDivToBody(key){
+        var d = document.getElementById("charts");
+        var chartid = "chart-" + key;
+        d.innerHTML +=
+                '<div id="chart-' + key + '">' +
+                '<div class="title" id="title-chart-' + key + '">' + key +
+                '</div>' +
+                '</div>';
+    }
+
+
+    function turnCSVIntoMagic(csv) {
+
+        data = d3.csv.parse(csv)
+//        d3.csv(csv, function (error, data) {
+
+
+            // Definition of the data fields to render
+            dataKeys = Object.keys(data[0]);
+            dataKeys.splice(dataKeys.indexOf("db_cid"), 1);
+            dataKeys.splice(dataKeys.indexOf("db_sid"), 1);
+            dataKeys.splice(dataKeys.indexOf("ccenter"), 1);
+
+            populateDropDownBoxesFields();
+
+            // Adds the divs to the document, one per key of the objects except db_cid and db_sid
+            addDivToBody("scatter");
+            dataKeys.forEach(function (key) {
+                addDivToBody(key);
+            });
+
+
+            // Variables to store min and max values, as well as number of cases where the data is numeric
+            dataKeys.forEach(function (key) {
+                minVals[key] = 1000000;
+                maxVals[key] = -1000000;
+                keysNotNanCounter[key] = 0;
+            });
+
+            // A little bit of data coertion, min/max computation and test for numerical / categorical
+            data.forEach(function (x) {
+                dataKeys.forEach(function (key) {
+                    if (!isNaN(x[key])) {
+                        x[key] = +x[key];
+                        if (x[key] > maxVals[key]) maxVals[key] = x[key];
+                        if (x[key] < minVals[key]) minVals[key] = x[key];
+                        keysNotNanCounter[key] += 1;
+                    }
+                })
+            });
+
+
+            // set crossfilter
+            ndx = crossfilter(data)
+
+            // Generates the dimensions, groups and charts
+            //TODO: actually those variables are not needed to be global, they are useful for debug purposes
+            dataKeys.forEach(function (key) {
+
+                // We are not interested in such displaying cid or sid
+                dimensions[key] = ndx.dimension(function (d) {
+                    return d[key];
+                })
+
+                // If most of the values of the key are numeric ...
+                if (keysNotNanCounter[key] / data.length > 0.7) {
+                    // Gets the number of elements per dimension
+                    var nElements = dimensions[key].group().all().length
+                    if (nElements < 10) { //Numerical value but referring to categorical numbers
+                        groups[key] = dimensions[key].group().reduceCount();
+                        chart = generateRowChart(key, dimensions[key], groups[key]);
+                    }
+                    else { //Numerical value
+                        //TODO: set the number of steps as a parameter
+                        var divC = (maxVals[key] - minVals[key]) / 30;
+                        groups[key] = dimensions[key].group(function (d) {
+                            return Math.floor(d / divC) * divC;
+                        })
+                        generateHistogram(key, dimensions[key], groups[key], minVals[key], maxVals[key])
+                    }
+                } else { //Categorical value
+                    groups[key] = dimensions[key].group()
+                    chart = generateRowChart(key, dimensions[key], groups[key])
+                }
+            })
+
+            key1 = dataKeys[0]
+            key2 = dataKeys[1]
+            scatterChart = dc.scatterPlot("#chart-scatter");
+            scatterChart
+                    .width(900)
+                    .height(480)
+                    .brushOn(false)
+                    .symbolSize(5)
+                    .clipPadding(10)
+                    .transitionDuration(0)
+                    .on("postRedraw", computeCorrelation);
+            setScatterPlotDimensions(key1,key2);
+
+            computeCorrelation();
+
+            dc.renderAll();
+
+//        })
+    }
+
+</script>
+
+
+<body onload="init()" style="margin: 0px">
+<div id="drop_zone"
+     style="height: 100vh; width: 100vw; background-color: white; display:table-cell; vertical-align:middle; text-align:center">
+    <img src="bear-304063_640.png" style="width: 300px; height:300px;">
+    <p style="font-size: 24px;">Feed me csvs!</p>
+</div>
+<div id="dropDownBoxes" style="display:none">
+    x-axis
+    <select id="dd1" name="dd1" onchange="refreshScatterParams()"></select>
+    y-axis
+    <select id="dd2" name="dd2" onchange="refreshScatterParams()"> </select>
+</div>
+<div id="charts"></div>
+</body>
+
+
+</html>
