@@ -297,22 +297,23 @@
 <div id="drop_zone">
 
     <section class="header">
-    <div class="container" align="center" style="height: 60vh; width: 100vw;vertical-align:middle;">
+        <div class="container" align="center" style="height: 60vh; width: 100vw;vertical-align:middle;">
             <h1 class="title">Interact with your data. Gain insights.</h1>
+
             <div class="container" align="center">
                 <img src="images/bear-304063_640.png" style="width: 450px; height:450px; margin:50px">
                 <h5>Just feed the bear a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file</h5>
             </div>
-    </div>
+        </div>
     </section>
 
     <!-- Why use Skeleton -->
     <div class="container">
         <h5>Frequently asked questions</h5>
 
-        <p><strong>What is dataBear?</strong> DataBear is a simple way of visualizing your data. You feed the bear
-            a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file and he will construct a dashboard that
-            will let you interact with it.
+        <p><strong>What is dataBear?</strong> DataBear is a simple way of visualizing and interacting with your data.
+            You feed the bear a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file and he will construct a
+            dashboard that will let you interact with it.
         </p>
 
         <p style="margin-bottom: 0px"><strong>What is the data format?</strong> Each data point is one row of the csv
@@ -325,7 +326,7 @@
             <li style="margin-bottom: 0px"><u>Numerical:</u> numerical quantities representing a continuous variable.
             </li>
             <li style="margin-bottom: 0px"><u>Categorical:</u> numerical or text fields representing a category. A
-                maximum number of 25 categories are allowed.
+                maximum number of 25 categories per dimension are allowed.
             </li>
             <li style="margin-bottom: 0px"><u>Freeform:</u> Any non-numerical fields with more than 25 distinct
                 elements. Such dimensions are ignored to prevent cluttering the representation.
@@ -334,7 +335,7 @@
 
 
         <p><strong>What happens with missing values and NaNs?</strong> At this moment dataBear is allergic to
-            missing or
+            missing values or
             NaNs. The behaviour of the software is undetermined when that is the case. Please, provide a complete
             dataset. We suggest replacing missing values and NaNs with a value that is below or above the expected
             range
@@ -360,7 +361,6 @@
 </div>
 
 
-
 <div id="dropDownBoxes" style="display:none">
     x-axis
     <select id="dd1" name="dd1" onchange="refreshScatterParams()"></select>
@@ -370,14 +370,18 @@
 <div id="charts"></div>
 
 
-
-
-
 <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function () {
+                    (i[r].q = i[r].q || []).push(arguments)
+                }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
 
     ga('create', 'UA-67774730-1', 'auto');
     ga('send', 'pageview');
