@@ -2,8 +2,15 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
+    <title>Interact with your data!</title>
+    <meta name="description" content="">
+    <meta name="author" content="German Gonzalez">
+
+    <link rel="stylesheet" type="text/css" href="css/normalize.css">
+    <link rel="stylesheet" type="text/css" href="css/skeleton.css">
     <link rel="stylesheet" type="text/css" href="css/dc.css"/>
-    <title>Correlation of data of COPDGene</title>
+
+
 </head>
 
 <style>
@@ -13,6 +20,7 @@
 
 </style>
 
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script type="text/javascript" src="js/d3.js"></script>
 <script type="text/javascript" src="js/crossfilter.js"></script>
 <script type="text/javascript" src="js/dc.js"></script>
@@ -22,6 +30,7 @@
     //    var dataCSV = "test.csv"
     var colorTable = d3.scale.category10();
     var dataKeys, key1, key2;
+    var dataTypes = {}; //Stores the type of the data as one of 'numerical','categorical','freeform', 'nans'
     var dimensions = {};
     var groups = {};
     var scatterChart;
@@ -29,6 +38,7 @@
     var maxVals = {};
     var keysNotNanCounter = {};
     var ndx;
+    var scatterDimension = 0;
 
 
     function init() {
@@ -48,7 +58,7 @@
             turnCSVIntoMagic(aa);
         }
         reader.readAsText(f);
-        document.getElementById('drop_zone').style.display     = 'none'
+        document.getElementById('drop_zone').style.display = 'none'
         document.getElementById('dropDownBoxes').style.display = 'inline'
     }
 
@@ -73,7 +83,7 @@
         return rv;
     }
 
-    function computeCorrelation(){
+    function computeCorrelation() {
         var drop1 = document.getElementById("dd1");
         var drop2 = document.getElementById("dd2");
         var key1 = drop1.options[drop1.selectedIndex].value;
@@ -81,8 +91,8 @@
         var data = dimensions[key1].top(Infinity)
         var x_corr = mypluck(data, key1)
         var y_corr = mypluck(data, key2)
-        corr_coeff = jStat.corrcoeff(x_corr,y_corr)
-        r2 = corr_coeff*corr_coeff
+        corr_coeff = jStat.corrcoeff(x_corr, y_corr)
+        r2 = corr_coeff * corr_coeff
         d3.select("#title-chart-scatter").text("scatter R^2= " + r2.toFixed(4))
     }
 
@@ -90,7 +100,7 @@
         var drop1 = document.getElementById("dd1");
         var drop2 = document.getElementById("dd2");
 
-        dataKeys.forEach(function(data){
+        dataKeys.forEach(function (data) {
             var newOption1 = document.createElement("option");
             newOption1.value = data;
             newOption1.innerHTML = data;
@@ -115,11 +125,19 @@
         setScatterPlotDimensions(key1, key2);
     }
 
-    function setScatterPlotDimensions(key1, key2){
-        var scatterDimension  = ndx.dimension(function(d) {return [d[key1], d[key2]]; })
-        var scatterGroup      = scatterDimension.group().reduceSum(function(d) { return d[key1]; });
-        scatterChart.x(d3.scale.linear().domain([minVals[key1],maxVals[key1]]))
-                .y(d3.scale.linear().domain([minVals[key2],maxVals[key2]]))
+    function setScatterPlotDimensions(key1, key2) {
+        // Hack for the scatter dimension initialization - no time to do it better
+        if (typeof(scatterDimension) == 'object') {
+            scatterDimension.dispose();
+        }
+        scatterDimension = ndx.dimension(function (d) {
+            return [d[key1], d[key2]];
+        })
+        var scatterGroup = scatterDimension.group().reduceSum(function (d) {
+            return d[key1];
+        });
+        scatterChart.x(d3.scale.linear().domain([minVals[key1], maxVals[key1]]))
+                .y(d3.scale.linear().domain([minVals[key2], maxVals[key2]]))
                 .yAxisLabel(key2)
                 .xAxisLabel(key1)
                 .dimension(scatterDimension)
@@ -156,7 +174,7 @@
         return chartGen;
     }
 
-    function addDivToBody(key){
+    function addDivToChartsDiv(key) {
         var d = document.getElementById("charts");
         var chartid = "chart-" + key;
         d.innerHTML +=
@@ -173,91 +191,99 @@
 //        d3.csv(csv, function (error, data) {
 
 
-            // Definition of the data fields to render
-            dataKeys = Object.keys(data[0]);
-            dataKeys.splice(dataKeys.indexOf("db_cid"), 1);
-            dataKeys.splice(dataKeys.indexOf("db_sid"), 1);
-            dataKeys.splice(dataKeys.indexOf("ccenter"), 1);
+        dataKeys = Object.keys(data[0]);
 
-            populateDropDownBoxesFields();
+        populateDropDownBoxesFields();
 
-            // Adds the divs to the document, one per key of the objects except db_cid and db_sid
-            addDivToBody("scatter");
+        // Adds the divs to the document, one per key of the objects except db_cid and db_sid
+        addDivToChartsDiv("scatter");
+        dataKeys.forEach(function (key) {
+            addDivToChartsDiv(key);
+        });
+
+
+        // Variables to store min and max values, as well as number of cases where the data is numeric
+        dataKeys.forEach(function (key) {
+            minVals[key] = 1000000;
+            maxVals[key] = -1000000;
+            keysNotNanCounter[key] = 0;
+        });
+
+        // A little bit of data coertion, min/max computation and test for numerical / categorical
+        data.forEach(function (x) {
             dataKeys.forEach(function (key) {
-                addDivToBody(key);
-            });
-
-
-            // Variables to store min and max values, as well as number of cases where the data is numeric
-            dataKeys.forEach(function (key) {
-                minVals[key] = 1000000;
-                maxVals[key] = -1000000;
-                keysNotNanCounter[key] = 0;
-            });
-
-            // A little bit of data coertion, min/max computation and test for numerical / categorical
-            data.forEach(function (x) {
-                dataKeys.forEach(function (key) {
-                    if (!isNaN(x[key])) {
-                        x[key] = +x[key];
-                        if (x[key] > maxVals[key]) maxVals[key] = x[key];
-                        if (x[key] < minVals[key]) minVals[key] = x[key];
-                        keysNotNanCounter[key] += 1;
-                    }
-                })
-            });
-
-
-            // set crossfilter
-            ndx = crossfilter(data)
-
-            // Generates the dimensions, groups and charts
-            //TODO: actually those variables are not needed to be global, they are useful for debug purposes
-            dataKeys.forEach(function (key) {
-
-                // We are not interested in such displaying cid or sid
-                dimensions[key] = ndx.dimension(function (d) {
-                    return d[key];
-                })
-
-                // If most of the values of the key are numeric ...
-                if (keysNotNanCounter[key] / data.length > 0.7) {
-                    // Gets the number of elements per dimension
-                    var nElements = dimensions[key].group().all().length
-                    if (nElements < 10) { //Numerical value but referring to categorical numbers
-                        groups[key] = dimensions[key].group().reduceCount();
-                        chart = generateRowChart(key, dimensions[key], groups[key]);
-                    }
-                    else { //Numerical value
-                        //TODO: set the number of steps as a parameter
-                        var divC = (maxVals[key] - minVals[key]) / 30;
-                        groups[key] = dimensions[key].group(function (d) {
-                            return Math.floor(d / divC) * divC;
-                        })
-                        generateHistogram(key, dimensions[key], groups[key], minVals[key], maxVals[key])
-                    }
-                } else { //Categorical value
-                    groups[key] = dimensions[key].group()
-                    chart = generateRowChart(key, dimensions[key], groups[key])
+                // Hack to remove , from the strings containing numbers
+                // what would happen with european numbers? i.e. . for separations and , for decimals
+                x[key] = x[key].replace(",", "");
+                if (!isNaN(x[key])) {
+                    x[key] = +x[key];
+                    if (x[key] > maxVals[key]) maxVals[key] = x[key];
+                    if (x[key] < minVals[key]) minVals[key] = x[key];
+                    keysNotNanCounter[key] += 1;
                 }
             })
+        });
 
-            key1 = dataKeys[0]
-            key2 = dataKeys[1]
-            scatterChart = dc.scatterPlot("#chart-scatter");
-            scatterChart
-                    .width(900)
-                    .height(480)
-                    .brushOn(false)
-                    .symbolSize(5)
-                    .clipPadding(10)
-                    .transitionDuration(0)
-                    .on("postRedraw", computeCorrelation);
-            setScatterPlotDimensions(key1,key2);
 
-            computeCorrelation();
+        // set crossfilter
+        ndx = crossfilter(data)
 
-            dc.renderAll();
+        // Generates the dimensions, groups and charts
+        //TODO: actually those variables are not needed to be global, they are useful for debug purposes
+        dataKeys.forEach(function (key) {
+
+            // We are not interested in such displaying cid or sid
+            dimensions[key] = ndx.dimension(function (d) {
+                return d[key];
+            })
+
+            // If most of the values of the key are numeric ...
+            if (keysNotNanCounter[key] == data.length) {
+                // Gets the number of elements per dimension
+                var nElements = dimensions[key].group().all().length
+                if (nElements < 10) { //Numerical value but referring to categorical numbers
+                    groups[key] = dimensions[key].group().reduceCount();
+                    chart = generateRowChart(key, dimensions[key], groups[key]);
+                    dataTypes[key] = 'categorical';
+                }
+                else { //Numerical value
+                    //TODO: set the number of steps as a parameter
+                    var divC = (maxVals[key] - minVals[key]) / 30;
+                    groups[key] = dimensions[key].group(function (d) {
+                        return Math.floor(d / divC) * divC;
+                    })
+                    generateHistogram(key, dimensions[key], groups[key], minVals[key], maxVals[key])
+                    dataTypes[key] = 'numerical';
+                }
+            } else { //Categorical value
+                // TODO: check for Nans
+                groups[key] = dimensions[key].group()
+                var nElements = dimensions[key].group().all().length
+                if (nElements < 25) {
+                    chart = generateRowChart(key, dimensions[key], groups[key])
+                    dataTypes[key] = 'categorical';
+                } else {
+                    dataTypes[key] = 'freeform';
+                }
+            }
+        })
+
+        key1 = dataKeys[1]
+        key2 = dataKeys[2]
+        scatterChart = dc.scatterPlot("#chart-scatter");
+        scatterChart
+                .width(900)
+                .height(480)
+                .brushOn(false)
+                .symbolSize(5)
+                .clipPadding(10)
+                .transitionDuration(0)
+                .on("postRedraw", computeCorrelation);
+        setScatterPlotDimensions(key1, key2);
+
+        computeCorrelation();
+
+        dc.renderAll();
 
 //        })
     }
@@ -266,11 +292,88 @@
 
 
 <body onload="init()" style="margin: 0px">
-<div id="drop_zone"
-     style="height: 100vh; width: 100vw; background-color: white; display:table-cell; vertical-align:middle; text-align:center">
-    <img src="bear-304063_640.png" style="width: 300px; height:300px;">
-    <p style="font-size: 24px;">Feed me csvs!</p>
+
+<!-- Information of the page; will disappear upon loading the data -->
+<div id="drop_zone">
+
+    <section class="header">
+    <div class="container" align="center" style="height: 60vh; width: 100vw;vertical-align:middle;">
+            <h1 class="title">Interact with your data. Gain insights!</h1>
+            <div class="container" align="center">
+                <img src="images/bear-304063_640.png" style="width: 450px; height:450px; margin:50px">
+                <h5>Just feed the bear a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file</h5>
+            </div>
+    </div>
+    </section>
+
+    <!-- Why use Skeleton -->
+    <div class="container">
+        <h5>Frequently asked questions</h5>
+
+        <p><strong>What is dataBear?</strong> DataBear is a simple way of visualizing your data. You feed the bear
+            a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file and he will construct a dashboard that
+            will let you interact with it.
+        </p>
+
+        <p style="margin-bottom: 0px"><strong>What is the data format?</strong> Each data point is one row of the csv
+            file. Each dimension is a
+            column. The first row contains the names of the dimensions. There are some limitations: a maximum of 31
+            columns is allowed. For fast interaction, we do not recommend analyzing more than 10,000 data points. The
+            type of data that can be in the columns is:
+        </p>
+        <ul>
+            <li style="margin-bottom: 0px"><u>Numerical:</u> numerical quantities representing a continuous variable.
+            </li>
+            <li style="margin-bottom: 0px"><u>Categorical:</u> numerical or text fields representing a category. A
+                maximum number of 25 categories are allowed.
+            </li>
+            <li style="margin-bottom: 0px"><u>Freeform:</u> Any non-numerical fields with more than 25 distinct
+                elements. Such dimensions are ignored to prevent cluttering the representation.
+            </li>
+        </ul>
+
+
+        <p><strong>What happens with missing values and NaNs?</strong> At this moment dataBear is allergic to
+            missing or
+            NaNs. The behaviour of the software is undetermined when that is the case. Please, provide a complete
+            dataset. We suggest replacing missing values and NaNs with a value that is below or above the expected
+            range
+            of the dimension.
+        </p>
+
+        <p><strong>What kind of analysis can I perform with dataBear?</strong> At this moment only scatter-plots and
+            correlation
+            analysis are supported. You can condition such correlations to the rest of the variables you have on
+            your csv file. The team is working on providing box-plots, annova analysis, spearman correalation
+            coefficient and linear regression models.
+        </p>
+
+        <p><strong>Where does my data reside? Do you make a copy of it?</strong> We have a clear data policy. Your data
+            is yours, we do not want to have anything to do with it. When you load the dataBear webpage, the software to
+            perform the analysis is downloaded and stored in your browser. When you drop a csv file the information is
+            loaded into your browser, it is never transmited to our servers. The data never leaves your computer.
+        </p>
+
+    </div>
+
+
 </div>
+
+
+
+<!--<div id="drop_zone"-->
+<!--style="height: 100vh; width: 100vw; background-color: white; display:table-cell; vertical-align:middle; text-align:center">-->
+<!--<img src="images/bear-304063_640.png" style="width: 300px; height:300px;">-->
+<!--<p style="font-size: 24px;">Feed me csvs!</p>-->
+<!--&lt;!&ndash;<p style="font-size: 24px;">(notes on allergies:&ndash;&gt;-->
+<!--&lt;!&ndash;<ul>&ndash;&gt;-->
+<!--&lt;!&ndash;<li>I will remove any datapoint with incomplete data - it is your responsability to fabricate it yourself.</li>&ndash;&gt;-->
+<!--&lt;!&ndash;<li>It is limited to 31 columns.</li>&ndash;&gt;-->
+<!--&lt;!&ndash;<li>The only decimal separator allowed is ','</li>&ndash;&gt;-->
+<!--&lt;!&ndash;</ul>&ndash;&gt;-->
+<!--&lt;!&ndash;</p>&ndash;&gt;-->
+<!--</div>-->
+
 <div id="dropDownBoxes" style="display:none">
     x-axis
     <select id="dd1" name="dd1" onchange="refreshScatterParams()"></select>
@@ -278,6 +381,23 @@
     <select id="dd2" name="dd2" onchange="refreshScatterParams()"> </select>
 </div>
 <div id="charts"></div>
+
+
+
+
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-67774730-1', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+
 </body>
 
 
