@@ -17,7 +17,6 @@
     div.title {
         font-weight: bold;
     }
-
 </style>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
@@ -316,12 +315,13 @@
 <!-- Information of the page; will disappear upon loading the data -->
 
 
+<div id="drop_zone">
 <div class="container" align="center">
     <h2 class="title">Interact with your data. Gain insights.</h2>
 </div>
 
 
-<div class="container" align="center" id="drop_zone">
+<div class="container" align="center">
     <img src="images/bear-304063_640.png" style="width: 450px; height:450px; margin:50px">
     <h5>Just feed the bear a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file</h5>
     <!--This was a nice idea, but it does not work due to the fact that JS can only ask for urls in the same domain-->
@@ -379,15 +379,15 @@
     </p>
 
 </div>
+</div>
 
-
-<div id="dropDownBoxes" style="display:none">
+<div id="dropDownBoxes" style="display:none; margin:10px">
     x-axis
     <select id="dd1" name="dd1" onchange="refreshScatterParams()"></select>
     y-axis
     <select id="dd2" name="dd2" onchange="refreshScatterParams()"> </select>
 </div>
-<div id="charts"></div>
+<div id="charts" style="margin:10px"></div>
 
 
 <script>
