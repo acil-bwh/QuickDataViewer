@@ -72,7 +72,8 @@
 
     var colorTable = d3.scale.category10();
     var dataKeys, key1, key2;
-    var dataTypes = {}; //Stores the type of the data as one of 'numerical','categorical','freeform', 'nans'
+    var dataTypes = {};  //Stores the type of the data as one of 'numerical','categorical','freeform', 'nans'
+    var displayKey = {}; //Stores a boolean variable telling if the data should be displayed
     var dimensions = {};
     var groups = {};
     var scatterChart;
@@ -101,9 +102,11 @@
         var data = dimensions[key1].top(Infinity)
         var x_corr = mypluck(data, key1)
         var y_corr = mypluck(data, key2)
-        corr_coeff = jStat.corrcoeff(x_corr, y_corr)
-        r2 = corr_coeff * corr_coeff
-        d3.select("#title-chart-scatter").text("scatter R^2= " + r2.toFixed(4))
+        var corr_coeff = jStat.corrcoeff(x_corr, y_corr)
+        var r2 = corr_coeff * corr_coeff
+        var spearman = jStat.spearmancoeff(x_corr,y_corr)
+        var sr2 = spearman*spearman;
+        d3.select("#title-chart-scatter").text("scatter R^2= " + r2.toFixed(4) + " spearman's R^2= " + sr2.toFixed(4))
     }
 
     function populateDropDownBoxesFields() {
@@ -209,7 +212,9 @@
     }
 
 
+    // Main function
     function turnDataIntoDashboard(data) {
+
         dataKeys = Object.keys(data[0]);
 
         populateDropDownBoxesFields();
