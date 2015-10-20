@@ -31,13 +31,13 @@
     // User interface callbacks
     function init() {
         // Part of the code done for debugging with static data files
-        var csvURL = "data/bmd.csv";
-        turnCSVURLIntoMagic(csvURL);
-        document.getElementById('drop_zone').style.display = 'none'
-        document.getElementById('dropDownBoxes').style.display = 'inline'
+//        var csvURL = "data/bmd.csv";
+//        turnCSVURLIntoMagic(csvURL);
+//        document.getElementById('drop_zone').style.display = 'none'
+//        document.getElementById('dropDownBoxes').style.display = 'inline'
 
         // Code for dropping files
-//        configureDropDIV();
+        configureDropDIV();
     }
 
     function handleFileSelect(evt) {
@@ -345,47 +345,39 @@
     <h5>Frequently asked questions</h5>
 
     <p><strong>What is dataBear?</strong> DataBear is a simple way of visualizing and interacting with your data.
-        You feed the bear a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file and he will construct a
+        You feed (drop into) the bear a <a href="https://www.ietf.org/rfc/rfc4180.txt">csv</a> file and he will construct a
         dashboard that will let you interact with it.
     </p>
 
-    <p style="margin-bottom: 0px"><strong>What is the data format?</strong> Each data point is one row of the csv
-        file. Each dimension is a
-        column. The first row contains the names of the dimensions. There are some limitations: a maximum of 31
-        columns is allowed. For fast interaction, we do not recommend analyzing more than 10,000 data points. The
-        type of data that can be in the columns is:
+    <p style="margin-bottom: 0px"><strong>What should be in the CSV?</strong> The first row contains the names of the
+        dimensions. Each data point is one row of the csv file. Each dimension is a column.  There are some
+        <strong>limitations</strong>: a maximum of 31 columns is allowed. For fast interaction, we do not recommend
+        analyzing more than 10,000 data points. The type of data that can be in the columns is:
     </p>
     <ul>
-        <li style="margin-bottom: 0px"><u>Numerical:</u> numerical quantities representing a continuous variable.
-        </li>
+        <li style="margin-bottom: 0px"><u>Numerical:</u> quantities representing a continuous variable.</li>
         <li style="margin-bottom: 0px"><u>Categorical:</u> numerical or text fields representing a category. A
-            maximum number of 25 categories per dimension are allowed.
-        </li>
+            maximum number of 25 categories per dimension are allowed.</li>
         <li style="margin-bottom: 0px"><u>Freeform:</u> Any non-numerical fields with more than 25 distinct
-            elements. Such dimensions are ignored to prevent cluttering the representation.
-        </li>
+            elements. Such dimensions are ignored to prevent cluttering the representation.</li>
     </ul>
 
 
     <p><strong>What happens with missing values and NaNs?</strong> At this moment dataBear is allergic to
-        missing values or
-        NaNs. The behaviour of the software is undetermined when that is the case. Please, provide a complete
-        dataset. We suggest replacing missing values and NaNs with a value that is below or above the expected
-        range
-        of the dimension.
+        missing values or NaNs. The behaviour of the software is undetermined when that is the case. Please, provide a
+        complete dataset. We suggest replacing missing values and NaNs with a value that is below or above the expected
+        range of the dimension.
     </p>
 
     <p><strong>What kind of analysis can I perform with dataBear?</strong> At this moment only scatter-plots and
-        correlation
-        analysis are supported. You can condition such correlations to the rest of the variables you have on
-        your csv file. The team is working on providing box-plots, annova analysis, spearman correalation
-        coefficient and linear regression models.
+        correlation analysis are supported. You can condition such correlations to the rest of the variables you have on
+        your csv file. The team is working on providing box-plots, annova analysis and linear regression models.
     </p>
 
     <p><strong>Where does my data reside? Do you make a copy of it?</strong> We have a clear data policy. Your data
-        is yours, we do not want to have anything to do with it. When you load the dataBear webpage, the software to
-        perform the analysis is downloaded and stored in your browser. When you drop a csv file the information is
-        loaded into your browser, it is never transmited to our servers. The data never leaves your computer.
+        is yours. When you load the dataBear webpage, the software to perform the analysis is downloaded and stored in
+        your browser. When you drop a csv file the information is loaded into your browser, it is never transmitted
+        to our servers. The data never leaves your computer.
     </p>
 
 </div>
