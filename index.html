@@ -30,9 +30,14 @@
     //==================================================================================================================
     // User interface callbacks
     function init() {
-//        var csvFile = "data/dataPuller2.csv";
-//        turnCSVIntoMagic(csvFile);
-        configureDropDIV();
+        // Part of the code done for debugging with static data files
+        var csvURL = "data/bmd.csv";
+        turnCSVURLIntoMagic(csvURL);
+        document.getElementById('drop_zone').style.display = 'none'
+        document.getElementById('dropDownBoxes').style.display = 'inline'
+
+        // Code for dropping files
+//        configureDropDIV();
     }
 
     function handleFileSelect(evt) {
