@@ -121,8 +121,6 @@ function setMainPlotDimensions(key1, key2) {
         mainChart
             .width(900)
             .height(480)
-            .brushOn(false)
-            .symbolSize(5)
             .clipPadding(10)
             .transitionDuration(0)
 
