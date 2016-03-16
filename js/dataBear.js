@@ -86,14 +86,16 @@ function setMainPlotDimensions(key1, key2) {
     if (typeof(scatterDimension) == 'object') {
         scatterDimension.dispose();
     }
-    var scatterGroup = scatterDimension.group().reduceSum(function (d) {
-        return d[key1];
-    });
+
 
     if (dataTypes[key1] == 'numerical') {
 
         scatterDimension = ndx.dimension(function (d) {
             return [d[key1], d[key2]];
+        });
+
+        var scatterGroup = scatterDimension.group().reduceSum(function (d) {
+            return d[key1];
         });
 
         mainChart = dc.scatterPlot("#chart-main");
@@ -121,6 +123,9 @@ function setMainPlotDimensions(key1, key2) {
 
         scatterDimension = ndx.dimension(function (d) {
             return d[key2];
+        });
+        var scatterGroup = scatterDimension.group().reduceSum(function (d) {
+            return d[key1];
         });
 
         mainChart = dc.boxPlot("#chart-main");
