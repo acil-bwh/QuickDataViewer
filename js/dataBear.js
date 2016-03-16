@@ -81,6 +81,17 @@ function computeCorrelation() {
 // Internal functions for configuration of the dashboard
 
 function setMainPlotDimensions(key1, key2) {
+
+    mainChart = dc.scatterPlot("#chart-main");
+    mainChart
+        .width(900)
+        .height(480)
+        .brushOn(false)
+        .symbolSize(5)
+        .clipPadding(10)
+        .transitionDuration(0)
+        .on("postRedraw", computeCorrelation);
+
     // Hack for the scatter dimension initialization - no time to do it better
     if (typeof(scatterDimension) == 'object') {
         scatterDimension.dispose();
@@ -242,15 +253,6 @@ function generateDashboard(data) {
     previous_key2 = key2
 
 
-    mainChart = dc.scatterPlot("#chart-main");
-    mainChart
-        .width(900)
-        .height(480)
-        .brushOn(false)
-        .symbolSize(5)
-        .clipPadding(10)
-        .transitionDuration(0)
-        .on("postRedraw", computeCorrelation);
     setMainPlotDimensions(key1, key2);
 
     computeCorrelation();
