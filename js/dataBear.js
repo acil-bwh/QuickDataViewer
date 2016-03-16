@@ -112,7 +112,7 @@ function setMainPlotDimensions(key1, key2) {
         mainChart
             .width(900)
             .height(480)
-            .clipPadding(10)
+            .clipPadding(30)
             .transitionDuration(0)
              .yAxisLabel(key2)
             .xAxisLabel(key1)
