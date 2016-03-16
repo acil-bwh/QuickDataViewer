@@ -122,7 +122,7 @@ function setMainPlotDimensions(key1, key2) {
     if (dataTypes[key1] == 'categorical') {
 
         scatterDimension = ndx.dimension(function (d) {
-            return d[key2];
+            return d[key1];
         });
        scatterGroup     = scatterDimension.group().reduce(
         function(p,v) {
