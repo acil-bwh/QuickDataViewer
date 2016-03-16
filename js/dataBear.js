@@ -261,7 +261,7 @@ function generateDashboard(data) {
         if (keysNotNanCounter[key] == data.length) {
             // Gets the number of elements per dimension
             var nElements = dimensions[key].group().all().length
-            if (nElements <= 10) { //Numerical value but referring to categorical numbers
+            if (nElements < 10) { //Numerical value but referring to categorical numbers
                 groups[key] = dimensions[key].group().reduceCount();
                 chart = generateCategoricalRowChart(key, dimensions[key], groups[key]);
                 dataTypes[key] = 'categorical';
