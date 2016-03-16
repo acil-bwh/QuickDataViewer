@@ -88,37 +88,6 @@ function setMainPlotDimensions(key1, key2) {
     }
 
 
-    if (dataTypes[key1] == 'numerical') {
-
-        scatterDimension = ndx.dimension(function (d) {
-            return [d[key1], d[key2]];
-        });
-
-        var scatterGroup = scatterDimension.group().reduceSum(function (d) {
-            return d[key1];
-        });
-
-        mainChart = dc.scatterPlot("#chart-main");
-
-        mainChart
-            .width(900)
-            .height(480)
-            .brushOn(false)
-            .symbolSize(5)
-            .clipPadding(10)
-            .transitionDuration(0)
-            .on("postRedraw", computeCorrelation);
-
-        mainChart.x(d3.scale.linear().domain([minVals[key1], maxVals[key1]]))
-            .y(d3.scale.linear().domain([minVals[key2], maxVals[key2]]))
-            .yAxisLabel(key2)
-            .xAxisLabel(key1)
-            .dimension(scatterDimension)
-            .group(scatterGroup);
-        dc.renderAll();
-        computeCorrelation();
-    }
-
     if (dataTypes[key1] == 'categorical') {
 
         scatterDimension = ndx.dimension(function (d) {
@@ -145,10 +114,42 @@ function setMainPlotDimensions(key1, key2) {
             .height(480)
             .clipPadding(10)
             .transitionDuration(0)
+             .yAxisLabel(key2)
+            .xAxisLabel(key1)
+
 
         mainChart.dimension(scatterDimension)
             .group(scatterGroup);
         dc.renderAll();
+    }
+    else {
+           scatterDimension = ndx.dimension(function (d) {
+            return [d[key1], d[key2]];
+        });
+
+        var scatterGroup = scatterDimension.group().reduceSum(function (d) {
+            return d[key1];
+        });
+
+        mainChart = dc.scatterPlot("#chart-main");
+
+        mainChart
+            .width(900)
+            .height(480)
+            .brushOn(false)
+            .symbolSize(5)
+            .clipPadding(10)
+            .transitionDuration(0)
+            .on("postRedraw", computeCorrelation);
+
+        mainChart.x(d3.scale.linear().domain([minVals[key1], maxVals[key1]]))
+            .y(d3.scale.linear().domain([minVals[key2], maxVals[key2]]))
+            .yAxisLabel(key2)
+            .xAxisLabel(key1)
+            .dimension(scatterDimension)
+            .group(scatterGroup);
+        dc.renderAll();
+        computeCorrelation();
     }
 
 }
