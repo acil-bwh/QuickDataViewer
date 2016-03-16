@@ -86,14 +86,16 @@ function setMainPlotDimensions(key1, key2) {
     if (typeof(scatterDimension) == 'object') {
         scatterDimension.dispose();
     }
-    scatterDimension = ndx.dimension(function (d) {
-        return [d[key1], d[key2]];
-    });
     var scatterGroup = scatterDimension.group().reduceSum(function (d) {
         return d[key1];
     });
 
     if (dataTypes[key1] == 'numerical') {
+
+        scatterDimension = ndx.dimension(function (d) {
+            return [d[key1], d[key2]];
+        });
+
         mainChart = dc.scatterPlot("#chart-main");
 
         mainChart
@@ -116,6 +118,11 @@ function setMainPlotDimensions(key1, key2) {
     }
 
     if (dataTypes[key1] == 'categorical') {
+
+        scatterDimension = ndx.dimension(function (d) {
+            return d[key2];
+        });
+
         mainChart = dc.boxPlot("#chart-main");
 
         mainChart
