@@ -114,6 +114,23 @@ function setMainPlotDimensions(key1, key2) {
         dc.renderAll();
         computeCorrelation();
     }
+
+    if (dataTypes[key1] == 'categorical') {
+        mainChart = dc.boxPlot("#chart-main");
+
+        mainChart
+            .width(900)
+            .height(480)
+            .brushOn(false)
+            .symbolSize(5)
+            .clipPadding(10)
+            .transitionDuration(0)
+
+        mainChart.dimension(scatterDimension)
+            .group(scatterGroup);
+        dc.renderAll();
+    }
+
 }
 
 // Functions for the chart
