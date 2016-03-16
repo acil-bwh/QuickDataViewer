@@ -82,16 +82,6 @@ function computeCorrelation() {
 
 function setMainPlotDimensions(key1, key2) {
 
-    mainChart = dc.scatterPlot("#chart-main");
-    mainChart
-        .width(900)
-        .height(480)
-        .brushOn(false)
-        .symbolSize(5)
-        .clipPadding(10)
-        .transitionDuration(0)
-        .on("postRedraw", computeCorrelation);
-
     // Hack for the scatter dimension initialization - no time to do it better
     if (typeof(scatterDimension) == 'object') {
         scatterDimension.dispose();
@@ -102,14 +92,28 @@ function setMainPlotDimensions(key1, key2) {
     var scatterGroup = scatterDimension.group().reduceSum(function (d) {
         return d[key1];
     });
-    mainChart.x(d3.scale.linear().domain([minVals[key1], maxVals[key1]]))
-        .y(d3.scale.linear().domain([minVals[key2], maxVals[key2]]))
-        .yAxisLabel(key2)
-        .xAxisLabel(key1)
-        .dimension(scatterDimension)
-        .group(scatterGroup);
-    dc.renderAll();
-    computeCorrelation();
+
+    if (dataTypes[key1] == 'numerical') {
+        mainChart = dc.scatterPlot("#chart-main");
+
+        mainChart
+            .width(900)
+            .height(480)
+            .brushOn(false)
+            .symbolSize(5)
+            .clipPadding(10)
+            .transitionDuration(0)
+            .on("postRedraw", computeCorrelation);
+
+        mainChart.x(d3.scale.linear().domain([minVals[key1], maxVals[key1]]))
+            .y(d3.scale.linear().domain([minVals[key2], maxVals[key2]]))
+            .yAxisLabel(key2)
+            .xAxisLabel(key1)
+            .dimension(scatterDimension)
+            .group(scatterGroup);
+        dc.renderAll();
+        computeCorrelation();
+    }
 }
 
 // Functions for the chart
