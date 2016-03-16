@@ -124,9 +124,19 @@ function setMainPlotDimensions(key1, key2) {
         scatterDimension = ndx.dimension(function (d) {
             return d[key2];
         });
-        var scatterGroup = scatterDimension.group().reduceSum(function (d) {
-            return d[key1];
-        });
+       scatterGroup     = scatterDimension.group().reduce(
+        function(p,v) {
+          p.push(v[key2]);
+          return p;
+        },
+        function(p,v) {
+          p.splice(p.indexOf(v[key2]), 1);
+          return p;
+        },
+        function() {
+          return [];
+        }
+      );
 
         mainChart = dc.boxPlot("#chart-main");
 
