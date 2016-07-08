@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+    <title>Correlation of data of COPDGene</title>
+</head>
+
+<style>
+    div.title    {font-weight: bold;}
+</style>
+
+<body>
+
+
+<div id="chart-choropleth">
+    <div class="title"> Number of cases  </div>
+</div>
+<!--<div id="chart-stacked">-->
+    <!--<div class="title"> Distribution of the risk index of the population  </div>-->
+<!--</div>-->
+
+
+<script type="text/javascript" src="js/d3.js"></script>
+<script type="text/javascript" src="js/crossfilter.js"></script>
+<script type="text/javascript" src="js/dc.js"></script>
+<script type="text/javascript">
+
+    //TODO: add tooltip
+    //TODO: add correlation on the fly. Hint: use scatterChart.data()[0].key
+    //TODO: integrate with the rest of the framework
+    //TODO: dynamic selection between pie chart or row chart
+    //TODO: add reset buttons to charts - D3-Tips-and-tricks page 510
+
+    function generateRowChart(key, dimension, group){
+        var chartGen = dc.rowChart("#chart-" + key)
+        var nEls = group.all().length
+        chartGen
+                .width(400).height(nEls*25+35)
+                .dimension(dimension)
+                .group(group)
+                .elasticX(true)
+                .colors(function (d) {
+                    return colorTable(d);
+                })
+        return chartGen;
+    }
+
+    function generateBarChart(key, dimension, group, minVal, maxVal){
+        var chartGen = dc.barChart("#chart-" + key)
+        chartGen
+                .width(400).height(150)
+                .dimension(dimension)
+                .group(group)
+                .x(d3.scale.linear().domain([minVal,maxVal]))
+                .elasticY(true)
+                .xUnits(function(){return 20;})
+                .gap(10);
+        return chartGen;
+    }
+
+
+//    var dataCSV = "test.csv"
+//    var dataCSV = "dataPuller2"
+    var dataCSV = "data/out2_added_ccenter_fake.csv"
+    var colorTable = d3.scale.category10();
+
+
+    d3.csv(dataCSV, function(error, data)
+    {
+        // This gentleman is used to get the different keys of the objects
+        firstObject = data[0];
+
+        // Adds the divs to the document, one per key of the objects except db_cid and db_sid
+        Object.keys(firstObject).forEach(function(key){
+            if (!((key=="db_sid") || (key == "db_cid") || (key == "ccenter")) ){
+                document.body.innerHTML +='<div id="chart-' + key + '">' +
+                        '<div class="title">' + key +
+                        '</div>' +
+                        '</div>';
+            }
+        });
+
+        // Variables to store min and max values, as well as number of cases where the data is numeric
+        var minVals = {};
+        var maxVals = {};
+        var keysNotNanCounter = {};
+        Object.keys(firstObject).forEach(function(key){
+            minVals[key] =  1000000;
+            maxVals[key] = -1000000;
+            keysNotNanCounter[key] = 0;
+        });
+
+        // A little bit of data coertion, min/max computation and test for numerical / categorical
+        data.forEach(function (x) {
+            Object.keys(x).forEach(function(key) {
+                x[key] = x[key].replace(",", "");
+                if (!isNaN(x[key])) {
+                    x[key] = +x[key];
+                    if(x[key] > maxVals[key]) maxVals[key] = x[key];
+                    if(x[key] < minVals[key]) minVals[key] = x[key];
+                    keysNotNanCounter[key] += 1;
+                }
+            })
+        });
+
+        // set crossfilter
+        ndx = crossfilter(data)
+        allPoints = ndx.groupAll()
+
+        // Generates the dimensions, groups and charts
+        //TODO: actually those variables are not needed to be global, they are useful for debug purposes
+        dimensions = {}
+        groups     = {}
+        Object.keys(firstObject).forEach(function(key){
+
+            // We are not interested in such displaying cid or sid
+            if (!((key=="db_sid") || (key == "db_cid")) ){
+
+                dimensions[key] = ndx.dimension(function (d) {return d[key];})
+
+                // If most of the values of the key are numeric ...
+                if (keysNotNanCounter[key]/data.length > 0.5) {
+                    // Gets the number of elements per dimension
+                    var nElements = dimensions[key].group().all().length
+                    if (nElements < 10) { //Numerical value but referring to categorical numbers
+                        groups[key] = dimensions[key].group().reduceCount()
+                        chart = generateRowChart(key, dimensions[key], groups[key])
+                    }
+                    else { //Numerical value
+                        //TODO: set the number of steps as a parameter
+                        var divC = (maxVals[key]-minVals[key])/30;
+                        groups[key] = dimensions[key].group(function (d) {
+                            return Math.floor(d / divC) * divC;
+                        })
+                        generateBarChart(key, dimensions[key], groups[key], minVals[key], maxVals[key])
+                    }
+                } else { //Categorical value
+                    groups[key] = dimensions[key].group()
+                    if (key!="ccenter")
+                    chart = generateRowChart(key, dimensions[key], groups[key])
+                }
+            } // skip cid or sid
+        })
+
+        // Generates the scatter-plot
+//        tooltip = d3.select("body").append("div")
+//                .attr("class", "tooltip")
+//                .style("opacity", 0);
+//        var key1 = Object.keys(firstObject)[0]
+//        var key2 = Object.keys(firstObject)[1]
+//        var keycolor = "MagicClusteringJames"
+//        var scatterDimension  = ndx.dimension(function(d) {return [d[key1], d[key2], d[keycolor]]; })
+//        var scatterGroup      = scatterDimension.group().reduceSum(function(d) { return d[key1]; });
+//
+//        scatterChart = dc.scatterPlot("#chart-scatter");
+//        scatterChart
+//                .width(900)
+//                .height(480)
+//                .x(d3.scale.linear().domain([minVals[key1],maxVals[key1]]))
+//                .brushOn(false)
+//                .symbolSize(5)
+//                .clipPadding(10)
+//                .yAxisLabel(key2)
+//                .xAxisLabel(key1)
+//                .dimension(scatterDimension)
+//                .transitionDuration(0)
+//                .group(scatterGroup)
+//                .title(function(d) {return d.db_sid;})
+//                .renderTitle(true)
+//                .colorAccessor(function (d) {
+//                    return d.key[2];
+//                })
+//                .colors(function (d) {
+//                    return colorTable(d);
+//                })
+
+
+        //TODO For some reason some values are not added
+        // https://github.com/square/crossfilter/issues/102#issuecomment-31570749
+        stackedDimension = ndx.dimension(function (d) {return d['ccenter'];})
+        stackedGroup = dimensions['ccenter'].group().reduce(
+                function(p,v){ //reduceAdd
+                    // Trick to prevent NaNs and screwing up
+                    p[v.COPDIndex] = (p[v.COPDIndex] || 0) + 1;
+                    p["count"] ++
+                    return p;
+                },
+                function(p,v){ //reduceDel
+                    p[v.COPDIndex] = (p[v.COPDIndex] || 0) - 1;
+                    p["count"] --
+                    return p;
+                },
+                function() { // init
+                    return {count:0};
+                }
+        );
+
+        function sel_stack(i) {
+            return function(d) {
+                if (d.value['count'] != 0)
+                    return d.value[i] / d.value['count'];
+                else
+                    return 0;
+//                return d.value[i] ;
+            };
+        }
+
+//        stackedChart = dc.barChart("#chart-stacked");
+//        stackedChart
+//                .width(850)
+//                .height(500)
+//                .x(d3.scale.ordinal())
+//                .xUnits(dc.units.ordinal)
+//                .margins({left: 50, top: 10, right: 10, bottom: 20})
+//                .brushOn(false)
+////                .clipPadding(10)
+//                .yAxisLabel("Percentage of cases")
+//                .elasticY(true)
+//                .dimension(stackedDimension)
+//                .group(stackedGroup, "1", sel_stack('1'))
+//                .legend(dc.legend().x(0).y(5).gap(5))
+//                .colors(function (d) { return colorTable(d); })
+//
+//        stackedChart.stack(stackedGroup, ''+2, sel_stack(''+2));
+//        for(var i = 4; i<10; i++)
+//            stackedChart.stack(stackedGroup, ''+i, sel_stack(''+i));
+//        stackedChart.render();
+
+
+        hospitalToState = {}
+        hospitalToState["AVA"] = "MI"
+        hospitalToState["BAY"] = "TX"
+        hospitalToState["BWH"] = "MA"
+        hospitalToState["COL"] = "NY"
+        hospitalToState["DUK"] = "NC"
+        hospitalToState["FAL"] = "MA"
+        hospitalToState["HAR"] = "MI"
+        hospitalToState["HPR"] = "MN"
+        hospitalToState["HVA"] = "TX"
+        hospitalToState["JHU"] = "MD"
+        hospitalToState["MSM"] = "GA"
+        hospitalToState["MVA"] = "MN"
+        hospitalToState["NJC"] = "CO"
+        hospitalToState["PIT"] = "PA"
+        hospitalToState["TEM"] = "PA"
+        hospitalToState["TXS"] = "TX"
+        hospitalToState["UAB"] = "AL"
+        hospitalToState["UIA"] = "IA"
+        hospitalToState["UMC"] = "MI"
+        hospitalToState["UMN"] = "MN"
+        hospitalToState["USD"] = "CA"
+
+        // Generate a choropleth chart
+        var dimensionStates = ndx.dimension(function (d) {
+            return hospitalToState[d.ccenter];
+        });
+        var groupStates = dimensionStates.group()
+
+        d3.json("geo/us-states.json", function (statesJson) {
+            var usChart = dc.geoChoroplethChart("#chart-choropleth");
+            usChart.width(850)
+                    .height(500)
+                    .dimension(dimensionStates)
+                    .group(groupStates)
+                    .overlayGeoJson(statesJson.features, "state", function (d) {
+                        return d.properties.name;
+                    })
+                    .colors(d3.scale.quantize().range(["#E2F2FF", "#C4E4FF", "#9ED2FF", "#81C5FF", "#6BBAFF", "#51AEFF", "#36A2FF", "#1E96FF", "#0089FF", "#0061B5"]))
+                    .colorDomain([0, 500])
+                    .colorCalculator(function (d) { return d ? usChart.colors()(d) : '#ccc'; })
+
+
+            dc.renderAll();
+        });
+
+//        all = ndx.groupAll();
+//        d3.select("#active").text(formatNumber(all.value()));
+
+
+
+//        scatterChart.svg().on("mouseover", function(d) {
+//                    tooltip.transition()
+//                            .duration(50)
+//                            .style("opacity", .9)
+//                            .style("position", "fixed")
+//                            .style("left", (d3.event.pageX + 5) + "px")
+//                            .style("top", (d3.event.pageY - 28) + "px")
+//                    tooltip.html(
+//                            "<p><a href=/dataviewer/{{study}}/patient/"+d.db_sid+">"+ d.db_sid + "</a>"
+//                    )
+//                  }) //end of mouseover
+//
+//        scatterChart.svg().on("mouseout", function(d) {
+//                    tooltip.transition()
+//                            .duration(1000)
+//                            .style("opacity", 0);
+//                }); //end of dot plotting
+
+
+    }); //End of main block (after getting data)
+
+</script>
+
+
+
+</body>
+</html>
